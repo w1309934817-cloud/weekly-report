@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>工作周报自动生成器</title>
+    <style>
+        *,::before,::after{box-sizing:border-box;margin:0;padding:0}
+        ::placeholder{color:#a8a29e;font-weight:400}
+        body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;background:#F2EFEB;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;padding-bottom:120px;padding-bottom:env(safe-area-inset-bottom,120px);-webkit-font-smoothing:antialiased}
+        a,button,input,select,textarea,label{touch-action:manipulation}
+        #toast{transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .25s;transform:translateY(-120%) scale(.92);opacity:0;position:fixed;top:20px;left:16px;right:16px;padding:14px 20px;border-radius:16px;z-index:50;display:flex;align-items:center;pointer-events:none;color:#fff;background:#059669;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+        #toast svg{margin-right:10px}
+        #toast.show{transform:translateY(0) scale(1);opacity:1}
+        header{background:linear-gradient(135deg,#312e81,#4f46e5,#6366f1,#8b5cf6);color:#fff;padding:32px 24px 40px;border-radius:0 0 32px 32px;position:relative;overflow:hidden}
+        header::before{content:'';position:absolute;top:-80px;right:-40px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none}
+        header::after{content:'';position:absolute;bottom:-30px;left:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04);pointer-events:none}
+        .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .header-top h1{font-size:24px;font-weight:800;letter-spacing:.03em}
+        .reset-btn{background:rgba(255,255,255,.12);font-size:11px;padding:7px 14px;border-radius:999px;border:none;color:#fff;cursor:pointer;display:flex;align-items:center;backdrop-filter:blur(4px);transition:background .2s;font-weight:600}
+        .reset-btn svg{margin-right:4px}
+        .reset-btn:active{background:rgba(255,255,255,.22)}
+        .month-row{display:flex;align-items:center;color:#c7d2fe;font-size:14px;font-weight:500}
+        .month-row select{background:rgba(255,255,255,.18);color:#fff;font-size:14px;font-weight:700;border-radius:12px;padding:7px 14px;border:1px solid rgba(255,255,255,.12);outline:none;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+        main{padding:0 20px 120px;margin-top:-20px}
+        .card{background:#fff;border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.03);padding:20px 20px 24px;margin-bottom:18px;border-left:3px solid #6366f1;transition:box-shadow .2s;animation:cardIn .4s ease-out both}
+        .card:nth-child(2){animation-delay:.08s}
+        .card:nth-child(3){animation-delay:.16s}
+        @-webkit-keyframes cardIn{from{opacity:0;-webkit-transform:translateY(16px);transform:translateY(16px)}to{opacity:1;-webkit-transform:translateY(0);transform:translateY(0)}}
+        @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        .card.accent-teal{border-left-color:#0d9488}
+        .card.accent-amber{border-left-color:#d97706}
+        .card-title{font-size:16px;font-weight:800;color:#1e293b;margin-bottom:16px;display:flex;align-items:center}
+        .card-bar{width:4px;height:20px;background:linear-gradient(180deg,#6366f1,#8b5cf6);border-radius:2px;margin-right:10px;flex-shrink:0}
+        .grid-2{display:flex;flex-wrap:wrap;margin:-8px}
+        .grid-2>*{flex:0 0 calc(50% - 16px);margin:8px}
+        .flabel{font-size:11px;color:#78716c;display:block;margin-bottom:5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+        .finput{width:100%;background:#F8F6F3;border:1px solid #E8E3DD;border-radius:14px;padding:12px 14px;font-size:16px;font-weight:700;color:#1e293b;outline:none;transition:all .2s ease}
+        .finput:focus{background:#fff;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+        .finput:focus-visible{outline:none}
+        .finput.emerald{color:#059669}
+        textarea.finput{font-size:13px;font-weight:400;line-height:1.7;resize:none;padding:10px 12px;min-height:52px;color:#44403c}
+        .stat-row{border-top:1px solid rgba(0,0,0,.04);margin-top:16px;padding-top:12px;display:flex;justify-content:space-between;font-size:11px;color:#78716c;font-weight:600}
+        .stat-pill{background:#F2EFEB;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center}
+        .stat-pill b{color:#44403c;margin-left:3px}
+        .stat-pill.highlight{background:#EEF0FF;color:#4338ca}
+        .stat-pill.highlight b{color:#4f46e5}
+        .ro-field{background:#EDE9E4;border:1px solid #DDD8D2;border-radius:14px;padding:12px 14px;font-size:16px;font-weight:700;text-align:right;width:100%;outline:none;cursor:default;color:#44403c}
+        .ro-field:focus{outline:none;box-shadow:none}
+        .ro-label{font-size:12px;color:#8B8581;display:block;margin-bottom:4px;font-weight:500}
+        .ro-label::after{content:' 🔒';font-size:10px}
+
+        #hospitalContainer{display:flex;flex-direction:column;max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px;scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent;-webkit-mask-image:linear-gradient(to bottom,black 80%,transparent 100%);mask-image:linear-gradient(to bottom,black 80%,transparent 100%)}
+        #hospitalContainer .hosp-label{margin-bottom:8px}
+        #hospitalContainer .hosp-label:last-child{margin-bottom:0}
+        #hospitalContainer::-webkit-scrollbar{width:4px}
+        #hospitalContainer::-webkit-scrollbar-track{background:transparent}
+        #hospitalContainer::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px}
+        .hosp-cb{display:none}
+        .hosp-label{display:flex;justify-content:space-between;align-items:center;width:100%;background-color:#fff;border:1px solid #e8e4df;border-radius:14px;padding:12px 16px;font-size:13px;color:#57534e;cursor:pointer;transition:all .2s ease;user-select:none;-webkit-user-select:none}
+        .hosp-label:active{background:#f5f3f0;transform:scale(.985)}
+        .hosp-cb:focus-visible + .hosp-label{outline:2px solid #818cf8;outline-offset:2px}
+        .hosp-label[data-status="1"]{animation:hospPop .25s ease-out;background:#eef2ff;border-color:#6366f1;color:#4338ca;font-weight:700}
+        .hosp-label[data-status="2"]{animation:hospPop .25s ease-out;background:#ecfdf5;border-color:#10b981;color:#065f46;font-weight:700}
+        .hosp-status{font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;white-space:nowrap;margin-left:8px}
+        .hosp-label[data-status="1"] .hosp-status{background:#e0e7ff;color:#4338ca}
+        .hosp-label[data-status="2"] .hosp-status{background:#d1fae5;color:#065f46}
+        @-webkit-keyframes hospPop{0%{-webkit-transform:scale(.96);transform:scale(.96)}50%{-webkit-transform:scale(1.02);transform:scale(1.02)}100%{-webkit-transform:scale(1);transform:scale(1)}}
+        @keyframes hospPop{0%{transform:scale(.96)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+
+        .biz-grid{display:flex;flex-wrap:wrap;background:#F5F2EF;padding:8px;border-radius:14px;margin:-4px}
+        .biz-grid>*{flex:0 0 calc(50% - 8px);margin:4px}
+        .mini-input{padding:10px 12px;font-size:14px;font-weight:700}
+        .card-stack{display:flex;flex-direction:column}
+        .card-stack>*{margin-bottom:16px}
+        .card-stack>*:last-child{margin-bottom:0}
+        .bottom-bar{position:fixed;bottom:0;left:0;right:0;padding:16px 20px;padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,rgba(242,239,235,.98) 60%,rgba(242,239,235,0));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;justify-content:center;z-index:40}
+        .gen-btn{width:100%;max-width:448px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-size:16px;font-weight:700;padding:16px 24px;border-radius:16px;border:none;box-shadow:0 4px 16px rgba(99,102,241,.25);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s ease}
+        .gen-btn svg{margin-right:8px}
+        .gen-btn:active{transform:scale(.97);box-shadow:0 2px 8px rgba(99,102,241,.2);background:#5b21b6}
+        .import-btn{background:rgba(255,255,255,.18);font-size:11px;padding:7px 14px;border-radius:999px;border:none;color:#fff;cursor:pointer;display:flex;align-items:center;backdrop-filter:blur(4px);transition:background .2s;font-weight:600}
+        .import-btn svg{margin-right:4px}
+        .import-btn:active{background:rgba(255,255,255,.28)}
+        .modal-overlay{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,.5);z-index:99;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s ease;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+        .modal-overlay.show{opacity:1;pointer-events:auto}
+        .modal-sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:448px;max-height:85vh;display:flex;flex-direction:column;padding:24px 20px;padding:24px 20px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1)}
+        .modal-overlay.show .modal-sheet{transform:translateY(0)}
+        .modal-title{font-size:16px;font-weight:800;color:#1e293b;margin-bottom:12px;display:flex;align-items:center}
+        .modal-title svg{margin-right:8px}
+        .modal-textarea{width:100%;flex:1;min-height:200px;max-height:50vh;background:#F8F6F3;border:1px solid #E8E3DD;border-radius:14px;padding:14px;font-size:13px;font-family:inherit;line-height:1.7;color:#1e293b;resize:none;outline:none;-webkit-overflow-scrolling:touch}
+        .modal-textarea:focus{border-color:#6366f1}
+        .modal-btns{display:flex;margin-top:14px}
+        .modal-btns .modal-btn:first-child{margin-right:10px}
+        .modal-btn{flex:1;padding:14px;border-radius:14px;border:none;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s ease}
+        .modal-btn:active{transform:scale(.97)}
+        .modal-btn.primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff}
+        .modal-btn.secondary{background:#F2EFEB;color:#57534e}
+    </style>
+</head>
+<body>
+    <div id="toast">
+        <svg style="width:20px;height:20px;color:#fff;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toastMsg" style="font-size:14px;font-weight:700">复制成功！</span>
+    </div>
+
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFileImport(this)">
+
+    <header>
+        <div class="header-top">
+            <div><h1 style="margin-bottom:3px">王云翔 · 周报</h1></div>
+            <div style="display:flex;align-items:center">
+                <button class="import-btn" onclick="document.getElementById('fileInput').click()"><svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>导入</button>
+                <button class="reset-btn" onclick="resetWeeklyText()"><svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0115.36-5.36M20 15a9 9 0 01-15.36 5.36"/></svg>重置</button>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span id="headerDate" style="font-size:12px;color:rgba(255,255,255,.7);font-weight:500"></span>
+            <span id="liveClock" style="font-size:11px;color:rgba(255,255,255,.85);font-weight:600"></span>
+        </div>
+        <div class="month-row">
+            <span>当前结算月份：</span>
+            <select id="monthSelector" onchange="updateMonthTarget()"></select>
+        </div>
+    </header>
+
+    <main>
+        <div class="card accent-teal">
+            <h2 class="card-title"><span class="card-bar"></span>指标达成数据 (万元)</h2>
+            <div class="grid-2">
+                <div><label class="flabel">年度累计完成</label><input type="number" id="annualActual" step="0.01" inputmode="decimal" class="data-input finput" style="color:#2563eb"></div>
+                <div><label class="flabel">本月累计完成</label><input type="number" id="monthActual" step="0.01" inputmode="decimal" class="data-input finput" style="color:#b45309"></div>
+                <div><label class="flabel">月度已回款额</label><input type="number" id="collectActual" step="0.01" inputmode="decimal" class="data-input finput emerald"></div>
+                <div><label class="flabel">月度回款指标</label><input type="number" id="collectTarget" value="10.0" step="0.01" inputmode="decimal" class="data-input finput" style="color:#7c3aed"></div>
+            </div>
+            <div class="grid-2" style="margin-top:12px">
+                <div><label class="ro-label">年度累计完成率</label><input id="annualRateRO" class="ro-field" value="0.00%" readonly tabindex="-1" style="color:#2563eb"></div>
+                <div><label class="ro-label">月度回款差额(万元)</label><input id="collectGapRO" class="ro-field" value="0.00" readonly tabindex="-1" style="color:#b45309"></div>
+            </div>
+            <div style="margin-top:14px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+                    <span style="font-size:11px;color:#78716c;font-weight:600">年度目标进度</span>
+                    <span id="progressPct" style="font-size:11px;color:#6366f1;font-weight:700">0%</span>
+                </div>
+                <div style="height:8px;background:#E8E3DD;border-radius:4px;overflow:hidden">
+                    <div id="progressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:4px;transition:width .4s ease"></div>
+                </div>
+            </div>
+            <div style="border-top:1px solid rgba(0,0,0,.04);margin-top:14px;padding-top:14px;display:flex;align-items:center">
+                <label class="flabel" style="margin:0;margin-right:10px;white-space:nowrap;font-size:11px">回款完成率(%)</label>
+                <input type="number" id="collectRate" step="0.1" inputmode="decimal" placeholder="输入完成率自动计算" class="data-input finput" style="padding:8px 12px;font-size:13px;font-weight:700;color:#4338ca" onchange="calcCollectFromRate()">
+            </div>
+            <div class="stat-row">
+                <span class="stat-pill">年指标 <b>135万</b></span>
+                <span class="stat-pill highlight"><b id="currentMonthTargetLabel">--万</b></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title" style="margin-bottom:8px"><span class="card-bar"></span>本周回款跟进客户</h2>
+            <div id="hospitalContainer"></div>
+        </div>
+
+        <div class="card accent-amber">
+            <h2 class="card-title"><span class="card-bar"></span>业务细节补充</h2>
+            <div class="card-stack">
+                <div>
+                    <label class="flabel" style="margin-bottom:4px">开票情况跟进描述</label>
+                    <textarea id="invoiceNote" class="data-input weekly-text finput" rows="2" placeholder="填写开票对账状态..."></textarea>
+                </div>
+                <div class="biz-grid">
+                    <div><label class="flabel">迪莲花/体检产出(万)</label><input type="number" id="dilienhuaActual" step="0.01" inputmode="decimal" class="data-input finput mini-input" style="color:#0e7490"></div>
+                    <div><label class="flabel">涉及客户数(家)</label><input type="number" id="dilienhuaCount" inputmode="numeric" class="data-input finput mini-input" style="color:#6b7280"></div>
+                </div>
+                <div>
+                    <label class="flabel" style="margin-bottom:4px">新签跟进（不限于外送）</label>
+                    <textarea id="newSignNote" class="data-input weekly-text finput" rows="1" data-default="本周暂无跟进。" placeholder="本周暂无跟进。"></textarea>
+                </div>
+                <div>
+                    <label class="flabel" style="margin-bottom:4px">重点项目跟进</label>
+                    <textarea id="keyProjectNote" class="data-input weekly-text finput" rows="1" data-default="暂无" placeholder="暂无"></textarea>
+                </div>
+                <div>
+                    <label class="flabel" style="margin-bottom:4px">续签工作推进</label>
+                    <textarea id="renewalNote" class="data-input weekly-text finput" rows="1" data-default="近期无合同到期客户。" placeholder="近期无合同到期客户。"></textarea>
+                </div>
+                <div>
+                    <label class="flabel" style="margin-bottom:4px">本周其他工作总结</label>
+                    <textarea id="otherWork" class="data-input weekly-text finput" rows="2" placeholder="各项招标、项目匹配等总结"></textarea>
+                </div>
+                <div>
+                    <label class="flabel" style="margin-bottom:4px">下周其他计划任务</label>
+                    <textarea id="nextPlan" class="data-input weekly-text finput" rows="1" placeholder="下周需推进的重点事项"></textarea>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="bottom-bar">
+        <button class="gen-btn" onclick="buildReport()">
+            <svg style="width:18px;height:18px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            生成周报
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="reportModal">
+        <div class="modal-sheet">
+            <div class="modal-title"><svg style="width:18px;height:18px;color:#6366f1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-3-3v6m-7 4V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2z"></path></svg>周报预览 · 可编辑后复制</div>
+            <textarea id="modalTextarea" class="modal-textarea"></textarea>
+            <div class="modal-btns">
+                <button class="modal-btn secondary" onclick="closeModal()">关闭</button>
+                <button class="modal-btn primary" onclick="copyFromModal()">复制并关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="importModal">
+        <div class="modal-sheet">
+            <div class="modal-title" id="importTitle"><svg style="width:18px;height:18px;color:#6366f1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>导入数据预览</div>
+            <div id="importPreview" style="max-height:40vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;background:#F5F2EF;border-radius:12px;padding:10px;font-size:12px;line-height:1.8;color:#475569;display:none"></div>
+            <textarea id="importTextarea" class="modal-textarea" placeholder="或在此处粘贴Excel数据（Tab/逗号分隔）&#10;&#10;支持识别列名：金额、回款、完成、累计、指标、产出等"></textarea>
+            <div class="modal-btns">
+                <button class="modal-btn secondary" onclick="closeImportModal()">关闭</button>
+                <button class="modal-btn primary" id="importFillBtn" onclick="parseImportData()">识别并填充</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var REPO_DATA = {
+            annualTarget: 135,
+            monthlyTargets: { 1: 9, 2: 8, 3: 10, 4: 10, 5: 9, 6: 11, 7: 12, 8: 13, 9: 13, 10: 12, 11: 14, 12: 14 },
+            clients: [
+                { name: "宝鸡市凤翔区妇幼保健计划生育服务中心", short: "凤翔区妇幼" },
+                { name: "通用环球中铁宝鸡医院", short: "中铁宝鸡医院" },
+                { name: "陇县妇幼保健院", short: "陇县妇幼" },
+                { name: "陕西健康医疗集团有限公司烽火医院", short: "烽火医院" },
+                { name: "宝鸡市第六人民医院", short: "第六人民医院" },
+                { name: "眉县中医医院", short: "眉县中医" },
+                { name: "中国人民解放军96607部队医院", short: "96607部队医院" },
+                { name: "千阳县妇幼保健院", short: "千阳县妇幼" },
+                { name: "宝鸡瑞海眼科医院有限公司", short: "瑞海眼科" },
+                { name: "陕西颐宝康园医疗管理有限公司综合诊所", short: "颐宝康园诊所" },
+                { name: "宝鸡渭滨华济医院", short: "华济医院" },
+                { name: "宝鸡高新区磻溪桥南诊所", short: "磻溪桥南诊所" },
+                { name: "宝鸡市凤翔区中医医院", short: "凤翔区中医" },
+                { name: "宝鸡雍康健体检中心有限公司", short: "雍康健体检" }
+            ]
+        };
+
+        window.onload = function() {
+            document.getElementById("headerDate").textContent = getWeekRangeStr();
+            tickClock();
+            setInterval(tickClock, 1000);
+            initMonthSelector();
+            initHospitals();
+            // Pre-fill textareas with defaults so placeholder doesn't overlap
+            var wts = document.querySelectorAll('.weekly-text');
+            for(var w = 0; w < wts.length; w++) {
+                if(wts[w].getAttribute('data-default')) wts[w].value = wts[w].getAttribute('data-default');
+            }
+            loadLocalCache();
+            updateMonthTarget();
+            updateComputedFields();
+            bindCacheEvents();
+            // Scroll textareas into view when focused (mobile keyboard fix)
+            var textareas = document.querySelectorAll('textarea');
+            for(var t = 0; t < textareas.length; t++) {
+                textareas[t].addEventListener('focus', function() {
+                    var self = this;
+                    setTimeout(function() { self.scrollIntoView({behavior:'smooth',block:'center'}); }, 500);
+                });
+            }
+        };
+
+        function showToast(msg, isError) {
+            var t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.style.background = isError ? '#ef4444' : '#10b981';
+            t.classList.add('show');
+            setTimeout(function(){ t.classList.remove('show'); }, 2500);
+        }
+
+        function tickClock() {
+            var n = new Date();
+            var y = n.getFullYear();
+            var mo = n.getMonth() + 1;
+            var d = n.getDate();
+            var h = n.getHours(), mi = n.getMinutes(), s = n.getSeconds();
+            document.getElementById('liveClock').textContent =
+                y + '-' + (mo < 10 ? '0' : '') + mo + '-' + (d < 10 ? '0' : '') + d + ' ' +
+                (h < 10 ? '0' : '') + h + ':' + (mi < 10 ? '0' : '') + mi + ':' + (s < 10 ? '0' : '') + s;
+        }
+        function getWeekRangeStr() {
+            var now = new Date();
+            var day = now.getDay() === 0 ? 7 : now.getDay();
+            var MS_DAY = 86400000;
+            var mon = new Date(now.getTime() - (day - 1) * MS_DAY);
+            var sun = new Date(now.getTime() + (7 - day) * MS_DAY);
+            var monStr = (mon.getMonth()+1) + '月' + mon.getDate() + '日';
+            var sunStr = (sun.getMonth()+1) + '月' + sun.getDate() + '日';
+            if(mon.getFullYear() !== sun.getFullYear()) {
+                monStr = mon.getFullYear() + '年' + monStr;
+                sunStr = sun.getFullYear() + '年' + sunStr;
+            }
+            return monStr + '-' + sunStr;
+        }
+
+        function initMonthSelector() {
+            var cur = new Date().getMonth() + 1;
+            var sel = document.getElementById('monthSelector');
+            for(var i = 1; i <= 12; i++) {
+                var o = document.createElement('option');
+                o.value = i; o.text = i + '月';
+                if(i === cur) o.selected = true;
+                sel.appendChild(o);
+            }
+        }
+
+        var STATUS_LABELS = ['', '月底前回款', '本周已回款'];
+
+        function initHospitals() {
+            var container = document.getElementById('hospitalContainer');
+            var htmlStr = '';
+            for(var idx = 0; idx < REPO_DATA.clients.length; idx++) {
+                var c = REPO_DATA.clients[idx];
+                var safeName = c.name.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                var safeShort = c.short.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                htmlStr += '<input type="checkbox" id="client_' + idx + '" data-name="' + safeName + '" data-short="' + safeShort + '" data-status="0" class="data-cb hosp-cb">' +
+                           '<label data-for="client_' + idx + '" class="hosp-label" data-status="0">' + safeName + '<span class="hosp-status"></span></label>';
+            }
+            container.innerHTML = htmlStr;
+
+            // Add click handlers for 3-state cycling
+            var labels = container.querySelectorAll('.hosp-label');
+            for(var l = 0; l < labels.length; l++) {
+                labels[l].addEventListener('click', function() {
+                    var cb = document.getElementById(this.getAttribute('data-for'));
+                    var cur = parseInt(cb.getAttribute('data-status'), 10) || 0;
+                    var next = (cur + 1) % 3;
+                    cb.setAttribute('data-status', next);
+                    cb.checked = (next > 0);
+                    this.setAttribute('data-status', next);
+                    var statusEl = this.querySelector('.hosp-status');
+                    if(statusEl) statusEl.textContent = STATUS_LABELS[next];
+                    saveLocalCache();
+                });
+            }
+        }
+
+        function updateMonthTarget() {
+            var m = document.getElementById('monthSelector').value;
+            document.getElementById('currentMonthTargetLabel').innerText = '月指标' + REPO_DATA.monthlyTargets[m] + '万';
+            saveLocalCache();
+        }
+
+        function updateComputedFields() {
+            var annualAct = getNum('annualActual');
+            var collectAct = getNum('collectActual');
+            var collectTar = getNum('collectTarget');
+            var annualRate = annualAct > 0 ? (annualAct / REPO_DATA.annualTarget * 100).toFixed(2) : '0.00';
+            var gap = collectTar - collectAct;
+            document.getElementById('annualRateRO').value = annualRate + '%';
+            document.getElementById('collectGapRO').value = gap.toFixed(2);
+            // Progress bar
+            var pct = annualAct > 0 ? Math.min(annualAct / REPO_DATA.annualTarget * 100, 100).toFixed(1) : '0.0';
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressPct').textContent = pct + '%';
+        }
+
+        function bindCacheEvents() {
+            var inputs = document.querySelectorAll('.data-input');
+            for(var i = 0; i < inputs.length; i++) {
+                inputs[i].addEventListener('input', saveLocalCache);
+            }
+            // Recompute on source field changes
+            var recomputeIds = ['annualActual', 'collectActual', 'collectTarget'];
+            for(var r = 0; r < recomputeIds.length; r++) {
+                var el = document.getElementById(recomputeIds[r]);
+                if(el) el.addEventListener('input', updateComputedFields);
+            }
+            var cbs = document.querySelectorAll('.data-cb');
+            for(var j = 0; j < cbs.length; j++) {
+                cbs[j].addEventListener('change', saveLocalCache);
+            }
+            document.getElementById('monthSelector').addEventListener('change', saveLocalCache);
+        }
+
+        var _cacheTimer = 0;
+        function saveLocalCache() {
+            clearTimeout(_cacheTimer);
+            _cacheTimer = setTimeout(function() {
+                try {
+                    var cache = {};
+                    var inputs = document.querySelectorAll('.data-input');
+                    for(var i = 0; i < inputs.length; i++) { cache[inputs[i].id] = inputs[i].value; }
+                    var cbs = document.querySelectorAll('.data-cb');
+                    for(var j = 0; j < cbs.length; j++) {
+                        cache[cbs[j].id] = cbs[j].checked;
+                        cache[cbs[j].id + '_status'] = cbs[j].getAttribute('data-status') || '0';
+                    }
+                    cache['monthSelector'] = document.getElementById('monthSelector').value;
+                    localStorage.setItem('weekly_report_cache', JSON.stringify(cache));
+                } catch(e) {}
+            }, 300);
+        }
+
+        function loadLocalCache() {
+            try {
+                var saved = localStorage.getItem('weekly_report_cache');
+                if(!saved) return;
+                var cache = JSON.parse(saved);
+                var inputs = document.querySelectorAll('.data-input');
+                for(var i = 0; i < inputs.length; i++) {
+                    if(cache[inputs[i].id] !== undefined) inputs[i].value = cache[inputs[i].id];
+                }
+                var cbs = document.querySelectorAll('.data-cb');
+                for(var j = 0; j < cbs.length; j++) {
+                    if(cache[cbs[j].id] !== undefined) cbs[j].checked = cache[cbs[j].id];
+                    var statusKey = cbs[j].id + '_status';
+                    if(cache[statusKey] !== undefined) {
+                        cbs[j].setAttribute('data-status', cache[statusKey]);
+                        var label = document.querySelector('label[data-for=\"' + cbs[j].id + '\"]');
+                        if(label) {
+                            label.setAttribute('data-status', cache[statusKey]);
+                            var statusEl = label.querySelector('.hosp-status');
+                            if(statusEl) statusEl.textContent = STATUS_LABELS[parseInt(cache[statusKey], 10) || 0];
+                        }
+                    }
+                }
+                if(cache['monthSelector']) document.getElementById('monthSelector').value = cache['monthSelector'];
+            } catch(e) {}
+        }
+
+        function resetWeeklyText() {
+            if(confirm("仅清空客户勾选与业务描述文本，KPI数字与月份保留不变")) {
+                var wts = document.querySelectorAll('.weekly-text');
+                for(var i = 0; i < wts.length; i++) { wts[i].value = wts[i].getAttribute('data-default') || ''; }
+                var cbs = document.querySelectorAll('.data-cb');
+                for(var j = 0; j < cbs.length; j++) {
+                    cbs[j].checked = false;
+                    cbs[j].setAttribute('data-status', '0');
+                    var lbl = document.querySelector('label[data-for=\"' + cbs[j].id + '\"]');
+                    if(lbl) {
+                        lbl.setAttribute('data-status', '0');
+                        var s = lbl.querySelector('.hosp-status');
+                        if(s) s.textContent = '';
+                    }
+                }
+                saveLocalCache();
+                showToast('已重置为新的一周');
+            }
+        }
+
+        function calcCollectFromRate() {
+            var rate = parseFloat(document.getElementById('collectRate').value);
+            if(isNaN(rate) || rate <= 0) return;
+            var target = parseFloat(document.getElementById('collectTarget').value) || 0;
+            document.getElementById('collectActual').value = (target * rate / 100).toFixed(2);
+            updateComputedFields();
+            saveLocalCache();
+        }
+
+        function getNum(id) { var v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; }
+
+        function buildReport() {
+            var annualAct = getNum('annualActual');
+            if(annualAct <= 0 && getNum('monthActual') <= 0 && getNum('collectActual') <= 0) {
+                if(!confirm('关键指标数据均为空，生成的报告数字将全为0。\n\n确定继续生成吗？')) return;
+            }
+            var monthAct = getNum('monthActual');
+            var collectAct = getNum('collectActual');
+            var collectTar = getNum('collectTarget');
+            var dlhAct = getNum('dilienhuaActual');
+            var dlhCount = Math.round(getNum('dilienhuaCount'));
+            var invoice = (document.getElementById('invoiceNote').value || '').trim() || '暂无。';
+            var newSign = (document.getElementById('newSignNote').value || '').trim() || '本周暂无跟进。';
+            var keyProject = (document.getElementById('keyProjectNote').value || '').trim() || '暂无';
+            var renewal = (document.getElementById('renewalNote').value || '').trim() || '近期无合同到期客户。';
+            var other = (document.getElementById('otherWork').value || '').trim() || '暂无。';
+            var next = (document.getElementById('nextPlan').value || '').trim() || '暂无。';
+            var m = document.getElementById('monthSelector').value;
+            var mTarget = REPO_DATA.monthlyTargets[m] || 1;
+            var annualRate = (annualAct / REPO_DATA.annualTarget * 100).toFixed(2);
+            var monthRate = (monthAct / mTarget * 100).toFixed(2);
+            var collectRate = collectTar > 0 ? (collectAct / collectTar * 100).toFixed(2) : '0.00';
+            var gap = collectTar - collectAct;
+            var gapStr = gap > 0 ? '剩余回款缺口' + gap.toFixed(2) + '万元' : '已超出回款指标' + Math.abs(gap).toFixed(2) + '万元';
+            var checkedNodes = [];
+            var rawNodes = document.querySelectorAll('.data-cb:checked');
+            for(var n = 0; n < rawNodes.length; n++) { checkedNodes.push(rawNodes[n]); }
+            var followUpStr = '本周暂无跟进。';
+            var nextHospitalsStr = '';
+
+            if(checkedNodes.length > 0) {
+                var lines = [];
+                var shorts = [];
+                for(var k = 0; k < checkedNodes.length; k++) {
+                    var status = checkedNodes[k].getAttribute('data-status');
+                    var statusText = status === '2' ? '本周已完成回款' : '月底前完成回款跟进';
+                    lines.push('• ' + checkedNodes[k].getAttribute('data-name') + '：' + statusText);
+                    shorts.push(checkedNodes[k].getAttribute('data-short'));
+                }
+                followUpStr = lines.join('\n');
+                nextHospitalsStr = '、' + shorts.join('、');
+            }
+
+            var out = '本周工作总结与下周工作计划\n\n' +
+                '一、本周工作总结\n' +
+                '1. 指标达成情况\n' +
+                '年度总指标：' + REPO_DATA.annualTarget + '万元，截止当前累计完成' + annualAct + '万元，达成率' + annualRate + '%\n' +
+                '月度总指标：' + m + '月指标' + mTarget + '万元，截至本周累计完成' + monthAct + '万元，达成率' + monthRate + '%\n\n' +
+                '2. 回款指标与开票情况\n' +
+                '已完成回款：本月累计完成回款' + collectAct + '万元，月度回款指标' + collectTar + '万元，累计回款达成率' + collectRate + '%，' + gapStr + '。\n' +
+                '本周重点跟进回款：\n' + followUpStr + '\n' +
+                '• 开票情况：' + invoice + '\n\n' +
+                '3. 新签跟进（不限于外送）\n' + newSign + '\n\n' +
+                '4. 重点项目跟进\n' + keyProject + '\n\n' +
+                '5. 续签工作推进\n' + renewal + '\n\n' +
+                '6. 迪莲花及体检业务\n本月迪莲花活动及体检业务共' + dlhCount + '家客户，已产出' + dlhAct + '万元\n\n' +
+                '7. 其他工作\n' + other + '\n\n' +
+                '二、下周工作计划\n' +
+                '1. ' + next + '\n' +
+                (nextHospitalsStr ? '2. 跟进' + nextHospitalsStr.substring(1) + '回款情况。' : '');
+
+            document.getElementById('modalTextarea').value = out;
+            document.getElementById('reportModal').classList.add('show');
+            try { localStorage.setItem('weekly_report_last', out); } catch(e) {}
+        }
+
+        function closeModal() {
+            document.getElementById('reportModal').classList.remove('show');
+        }
+
+        function copyFromModal() {
+            var text = document.getElementById('modalTextarea').value;
+            if(!text.trim()) return;
+            copyToClipboard(text);
+            closeModal();
+        }
+
+        function openImportModal() {
+            document.getElementById('importTextarea').value = '';
+            document.getElementById('importModal').classList.add('show');
+            setTimeout(function() { document.getElementById('importTextarea').focus(); }, 300);
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.remove('show');
+        }
+
+        // Parse a number from cell text: handles "1,234.56", "1234.56万", "12.3%"
+        function parseCellNum(raw) {
+            if(!raw) return NaN;
+            raw = String(raw).replace(/,/g,'').replace(/[%％]/g,'').trim();
+            var wan = 1;
+            if(/万$/.test(raw)) { wan = 10000; raw = raw.slice(0,-1); }
+            var v = parseFloat(raw);
+            return isNaN(v) ? NaN : v * wan;
+        }
+
+        // Score a row for how well it matches known header keywords
+        function rowKeywordScore(cells) {
+            var allKw = ['年度累计完成','年度完成','年累计','本月累计完成','本月完成','当月完成',
+                         '已回款额','回款额','回款金额','月度回款','回款指标','月度指标',
+                         '迪莲花','体检产出','客户数','涉及客户','完成率','回款率',
+                         '累计','完成','回款','指标','金额','年度','本月','月度','产出'];
+            var score = 0;
+            for(var i = 0; i < cells.length; i++) {
+                for(var k = 0; k < allKw.length; k++) {
+                    if(cells[i].indexOf(allKw[k]) !== -1) { score += allKw[k].length; break; }
+                }
+            }
+            return score;
+        }
+
+        function parseImportData() {
+            var raw = document.getElementById('importTextarea').value;
+            if(!raw.trim()) { showToast('请先粘贴Excel数据', true); return; }
+
+            var rows = raw.split(/[\n\r]+/);
+            // Remove empty trailing rows
+            while(rows.length > 0 && !rows[rows.length-1].trim()) rows.pop();
+
+            // Auto-detect separator: count tabs vs commas
+            var sep = /\t/;
+            var tabCount = (raw.match(/\t/g) || []).length;
+            var commaCount = (raw.match(/,/g) || []).length;
+            if(commaCount > tabCount * 2) sep = /,/;
+
+            // Parse rows
+            var parsed = [];
+            for(var i = 0; i < rows.length; i++) {
+                var cells = rows[i].split(sep);
+                var clean = [];
+                var hasNum = false;
+                for(var c = 0; c < cells.length; c++) {
+                    var cell = cells[c].trim();
+                    // Remove surrounding quotes
+                    if((cell[0]==='"'&&cell[cell.length-1]==='"')||(cell[0]==="'"&&cell[cell.length-1]==="'")) {
+                        cell = cell.slice(1,-1);
+                    }
+                    clean.push(cell);
+                    if(!isNaN(parseCellNum(cell))) hasNum = true;
+                }
+                parsed.push({cells: clean, hasNum: hasNum, score: rowKeywordScore(clean)});
+            }
+
+            // Find best header row: highest keyword score among early rows (top 5)
+            var headerIdx = -1;
+            var bestScore = 0;
+            var scanLimit = Math.min(parsed.length, 5);
+            for(var j = 0; j < scanLimit; j++) {
+                if(parsed[j].score > bestScore) { bestScore = parsed[j].score; headerIdx = j; }
+            }
+            // If no clear header found, use first row without numbers
+            if(headerIdx < 0 || bestScore < 2) {
+                for(var j2 = 0; j2 < Math.min(parsed.length, 3); j2++) {
+                    if(!parsed[j2].hasNum) { headerIdx = j2; break; }
+                }
+            }
+
+            var headers = headerIdx >= 0 ? parsed[headerIdx].cells : [];
+            var dataRows = [];
+            for(var d = 0; d < parsed.length; d++) {
+                if(d !== headerIdx && parsed[d].hasNum) dataRows.push(parsed[d].cells);
+            }
+
+            // Keyword-to-field mapping (expanded)
+            var fieldMap = {
+                annualActual:  ['年度累计完成','年度完成','年累计完成','累计完成额','年累计','全年累计','年度累计','累计完成'],
+                monthActual:   ['本月累计完成','本月完成','当月完成','月累计完成','本月累计','月度累计完成'],
+                collectActual: ['已回款额','回款额','回款金额','本月回款','月度已回款','当月回款','实际回款','累计回款'],
+                collectTarget: ['回款指标','月度回款指标','月度指标','回款目标','当月指标'],
+                dilienhuaActual: ['迪莲花','体检产出','莲花产出','迪莲花产出','体检','莲花'],
+                dilienhuaCount: ['客户数','涉及客户','家数','客户数量'],
+                collectRate:   ['回款完成率','完成率','回款率','达成率']
+            };
+
+            // Try to find current month row in data
+            var curMonth = (new Date().getMonth() + 1) + '月';
+            var bestRowIdx = dataRows.length - 1; // default: last row
+            for(var r = 0; r < dataRows.length; r++) {
+                if(dataRows[r][0] && dataRows[r][0].indexOf(curMonth) !== -1) { bestRowIdx = r; break; }
+            }
+
+            var filled = {};
+            for(var fieldId in fieldMap) {
+                if(!fieldMap.hasOwnProperty(fieldId)) continue;
+                var keywords = fieldMap[fieldId];
+                var colIdx = -1;
+                for(var h = 0; h < headers.length; h++) {
+                    for(var k = 0; k < keywords.length; k++) {
+                        if(headers[h].indexOf(keywords[k]) !== -1) { colIdx = h; break; }
+                    }
+                    if(colIdx >= 0) break;
+                }
+
+                if(colIdx >= 0 && bestRowIdx < dataRows.length) {
+                    var val = parseCellNum(dataRows[bestRowIdx][colIdx]);
+                    if(!isNaN(val) && val >= 0) {
+                        var el = document.getElementById(fieldId);
+                        if(el) {
+                            el.value = (fieldId === 'dilienhuaCount') ? String(Math.round(val)) : val.toFixed(2);
+                            filled[fieldId] = el.value;
+                        }
+                    }
+                }
+            }
+
+            // Fallback: no header match — positional fill from best row
+            var filledCount = Object.keys(filled).length;
+            if(filledCount === 0 && dataRows.length > 0) {
+                var row = dataRows[bestRowIdx] || dataRows[dataRows.length-1];
+                var nums = [];
+                for(var n = 0; n < row.length; n++) {
+                    var v2 = parseCellNum(row[n]);
+                    if(!isNaN(v2) && v2 >= 0) nums.push(v2);
+                }
+                var fbFields = ['annualActual', 'monthActual', 'collectActual', 'collectTarget'];
+                for(var f2 = 0; f2 < Math.min(nums.length, fbFields.length); f2++) {
+                    var el2 = document.getElementById(fbFields[f2]);
+                    if(el2 && nums[f2] > 0) {
+                        el2.value = nums[f2].toFixed(2);
+                        filled[fbFields[f2]] = nums[f2].toFixed(2);
+                    }
+                }
+                filledCount = Object.keys(filled).length;
+            }
+
+            if(filledCount > 0) {
+                if(filled['collectRate']) calcCollectFromRate();
+                updateComputedFields();
+                saveLocalCache();
+                showToast('已识别并填充 ' + filledCount + ' 个字段');
+                closeImportModal();
+            } else {
+                showToast('未识别到金额数据，请确认已从Excel复制表格区域并粘贴', true);
+            }
+        }
+
+        // ===== XLSX/ZIP file parser =====
+
+        function handleFileImport(input) {
+            var file = input.files && input.files[0];
+            if(!file) return;
+            var reader = new FileReader();
+            reader.onload = function() {
+                var buffer = reader.result;
+                var ext = file.name.split('.').pop().toLowerCase();
+                var headers, rows;
+                if(ext === 'csv') {
+                    var text = new TextDecoder('utf-8').decode(buffer);
+                    var lines = text.split(/[\n\r]+/);
+                    headers = []; rows = [];
+                    for(var i = 0; i < lines.length; i++) {
+                        var cells = lines[i].split(/,|\t/);
+                        var clean = []; var hasNum = false;
+                        for(var c = 0; c < cells.length; c++) {
+                            var cell = cells[c].replace(/^["']|["']$/g,'').trim();
+                            clean.push(cell);
+                            if(parseCellNum(cell) >= 0) hasNum = true;
+                        }
+                        if(!headers.length && !hasNum) headers = clean;
+                        else if(hasNum) rows.push(clean);
+                    }
+                    showImportPreview(headers, rows);
+                } else {
+                    var result = parseXLSX(buffer);
+                    if(result) showImportPreview(result.headers, result.rows);
+                    else showToast('无法解析此Excel文件，请尝试另存为CSV后导入', true);
+                }
+                input.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ---- Minimal ZIP parser ----
+        function findZipEntry(buffer, name) {
+            var dv = new DataView(buffer);
+            var size = buffer.byteLength;
+            // Search for local file header signature PK\03\04
+            for(var off = 0; off < size - 30; off++) {
+                if(dv.getUint8(off)===0x50 && dv.getUint8(off+1)===0x4B && dv.getUint8(off+2)===0x03 && dv.getUint8(off+3)===0x04) {
+                    var method = dv.getUint16(off+8, true);
+                    var compSize = dv.getUint32(off+18, true);
+                    var nameLen = dv.getUint16(off+26, true);
+                    var extraLen = dv.getUint16(off+28, true);
+                    var fname = '';
+                    for(var n = 0; n < nameLen; n++) fname += String.fromCharCode(dv.getUint8(off+30+n));
+                    var dataOff = off + 30 + nameLen + extraLen;
+                    if(fname === name) {
+                        var raw = new Uint8Array(buffer, dataOff, compSize);
+                        if(method === 0) return raw; // Stored
+                        if(method === 8) { var dec = inflate(raw); if(dec) return dec; }
+                        return null;
+                    }
+                    off = dataOff + compSize - 1;
+                }
+            }
+            return null;
+        }
+
+        // ---- Minimal INFLATE (fixed Huffman + stored blocks) ----
+        function BitReader(data) {
+            this.d = data; this.p = 0; this.bb = 0; this.bl = 0;
+        }
+        BitReader.prototype.rb = function(n) {
+            while(this.bl < n) { this.bb |= this.d[this.p++] << this.bl; this.bl += 8; }
+            var v = this.bb & ((1 << n) - 1);
+            this.bb >>>= n; this.bl -= n;
+            return v >>> 0;
+        };
+
+        function buildFixedLitTable() {
+            var lens = [];
+            for(var i = 0; i <= 143; i++) lens[i] = 8;
+            for(var i = 144; i <= 255; i++) lens[i] = 9;
+            for(var i = 256; i <= 279; i++) lens[i] = 7;
+            for(var i = 280; i <= 287; i++) lens[i] = 8;
+            return buildHuffTable(lens, 288);
+        }
+
+        function buildFixedDistTable() {
+            var lens = []; for(var i = 0; i < 32; i++) lens[i] = 5;
+            return buildHuffTable(lens, 32);
+        }
+
+        function buildHuffTable(lens, n) {
+            // Count codes per length, find starting code for each length
+            var blCount = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+            var maxBits = 0;
+            for(var i = 0; i < n; i++) { var l = lens[i] || 0; blCount[l]++; if(l > maxBits) maxBits = l; }
+            var nextCode = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+            var code = 0;
+            for(var bits = 1; bits <= maxBits; bits++) {
+                code = (code + blCount[bits-1]) << 1;
+                nextCode[bits] = code;
+            }
+            // Build lookup table: for maxBits <= 12, use flat table
+            var tableSize = 1 << maxBits;
+            var table = new Int32Array(tableSize * 2); // [symbol, bits]
+            for(var s = 0; s < n; s++) {
+                var len = lens[s] || 0;
+                if(len === 0) continue;
+                var c = nextCode[len]++;
+                // Reverse the code bits for LSB-first reading
+                var rev = 0;
+                for(var b = 0; b < len; b++) { rev = (rev << 1) | (c & 1); c >>= 1; }
+                // Fill all table entries that match this prefix
+                var step = 1 << len;
+                for(var entry = rev; entry < tableSize; entry += step) {
+                    table[entry * 2] = s;
+                    table[entry * 2 + 1] = len;
+                }
+            }
+            return {table: table, maxBits: maxBits};
+        }
+
+        function inflate(data) {
+            var br = new BitReader(data);
+            var litTable = buildFixedLitTable();
+            var distTable = buildFixedDistTable();
+            var out = [];
+            var outPos = 0;
+            var final;
+            var LEN_EXTRA = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+            var LEN_BASE  = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+            var DIST_EXTRA = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+            var DIST_BASE  = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+
+            do {
+                final = br.rb(1);
+                var btype = br.rb(2);
+                if(btype === 0) {
+                    // Stored block
+                    br.bb = 0; br.bl = 0;
+                    var len = br.d[br.p] | (br.d[br.p+1] << 8); br.p += 4;
+                    for(var i = 0; i < len; i++) { out[outPos++] = br.d[br.p++]; }
+                } else if(btype === 1 || btype === 2) {
+                    // Fixed or dynamic Huffman (dynamic simplified: reuse fixed for common XLSX)
+                    var litT = btype === 1 ? litTable : litTable;
+                    var distT = btype === 1 ? distTable : distTable;
+                    if(btype === 2) {
+                        // Dynamic header — parse and build tables
+                        var hlit = br.rb(5) + 257;
+                        var hdist = br.rb(5) + 1;
+                        var hclen = br.rb(4) + 4;
+                        var CL_ORDER = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+                        var clLens = []; for(var i = 0; i < 19; i++) clLens[i] = 0;
+                        for(var i = 0; i < hclen; i++) clLens[CL_ORDER[i]] = br.rb(3);
+                        var clTable = buildHuffTable(clLens, 19);
+                        var allLens = [];
+                        var pos = 0;
+                        while(pos < hlit + hdist) {
+                            var entry = clTable.table[br.bb & ((1 << clTable.maxBits) - 1)];
+                            if(!entry && entry !== 0) { entry = 0; }
+                            var sym = clTable.table[entry * 2];
+                            var bits = clTable.table[entry * 2 + 1];
+                            if(!bits) { sym = 0; bits = clTable.maxBits; }
+                            br.rb(bits);
+                            if(sym < 16) { allLens[pos++] = sym; }
+                            else if(sym === 16) { var prev = allLens[pos-1]||0; var rep = br.rb(2)+3; for(var r=0;r<rep;r++) allLens[pos++]=prev; }
+                            else if(sym === 17) { var rep2 = br.rb(3)+3; for(var r=0;r<rep2;r++) allLens[pos++]=0; }
+                            else if(sym === 18) { var rep3 = br.rb(7)+11; for(var r=0;r<rep3;r++) allLens[pos++]=0; }
+                        }
+                        var litLens = []; for(var i=0;i<hlit;i++) litLens[i]=allLens[i]||0;
+                        var distLens = []; for(var i=0;i<hdist;i++) distLens[i]=allLens[hlit+i]||0;
+                        litT = buildHuffTable(litLens, hlit);
+                        distT = buildHuffTable(distLens, hdist);
+                    }
+                    var table = litT.table, maxB = litT.maxBits, mask = (1 << maxB) - 1;
+                    var dtable = distT.table, dmaxB = distT.maxBits, dmask = (1 << dmaxB) - 1;
+                    while(true) {
+                        var idx = (br.bb & mask);
+                        var sym = table[idx * 2], sbits = table[idx * 2 + 1];
+                        if(!sbits) { sym = table[0]; sbits = maxB; }
+                        br.rb(sbits);
+                        if(sym < 256) { out[outPos++] = sym; }
+                        else if(sym === 256) { break; }
+                        else {
+                            var lenCode = sym - 257;
+                            var length = LEN_BASE[lenCode] + (lenCode >= 8 ? br.rb(LEN_EXTRA[lenCode]) : 0);
+                            var didx = (br.bb & dmask);
+                            var distCode = dtable[didx * 2], dbits = dtable[didx * 2 + 1];
+                            if(!dbits) { distCode = dtable[0]; dbits = dmaxB; }
+                            br.rb(dbits);
+                            var dist = DIST_BASE[distCode] + (distCode >= 4 ? br.rb(DIST_EXTRA[distCode]) : 0);
+                            var copyFrom = outPos - dist;
+                            for(var c = 0; c < length; c++) { out[outPos++] = out[copyFrom + c]; }
+                        }
+                    }
+                } else { return null; }
+            } while(!final);
+            return new Uint8Array(out);
+        }
+
+        // ---- XLSX XML parser ----
+        function parseXLSX(buffer) {
+            // Extract shared strings
+            var sstData = findZipEntry(buffer, 'xl/sharedStrings.xml');
+            var strings = [];
+            if(sstData) {
+                var sstText = new TextDecoder('utf-8').decode(sstData);
+                var re = /<t[^>]*>([^<]*)<\/t>/g;
+                var m;
+                while((m = re.exec(sstText)) !== null) strings.push(m[1]);
+            }
+
+            // Extract sheet data
+            var sheetData = findZipEntry(buffer, 'xl/worksheets/sheet1.xml');
+            if(!sheetData) return null;
+
+            var xml = new TextDecoder('utf-8').decode(sheetData);
+            // Parse rows: <row ...> <c ...><v>VALUE</v></c> ... </row>
+            // Cell reference: <c r="A1" t="s"><v>0</v></c> means shared string index 0
+            // <c r="B1"><v>123</v></c> means numeric value 123
+            var rows = [];
+            var rowRe = /<row[^>]*>/g;
+            var cellRe = /<c[^>]*?(?:t="([^"]*)")?[^>]*>(?:<v>([^<]*)<\/v>)?[^<]*<\/c>/g;
+            var xmlWithoutTags = xml.replace(/<row[^>]*>/g, '\n<ROW>').replace(/<\/row>/g, '</ROW>');
+            var rowParts = xmlWithoutTags.split('\n<ROW>');
+            for(var i = 1; i < rowParts.length; i++) {
+                var cells = [];
+                cellRe.lastIndex = 0;
+                var cm;
+                var rowContent = rowParts[i];
+                while((cm = cellRe.exec(rowContent)) !== null) {
+                    var t = cm[1]; // cell type: "s" = shared string, absent = numeric
+                    var v = cm[2]; // value
+                    if(v === undefined || v === null) { cells.push(''); continue; }
+                    if(t === 's') {
+                        var idx = parseInt(v, 10);
+                        cells.push(strings[idx] !== undefined ? strings[idx] : '');
+                    } else {
+                        cells.push(v);
+                    }
+                }
+                if(cells.length > 0) rows.push(cells);
+            }
+
+            if(rows.length === 0) return null;
+            // Separate headers from data
+            var headers = [];
+            var dataRows = [];
+            for(var r = 0; r < rows.length; r++) {
+                var hasNum = false;
+                for(var c = 0; c < rows[r].length; c++) {
+                    if(parseCellNum(rows[r][c]) >= 0) hasNum = true;
+                }
+                if(!headers.length && !hasNum) headers = rows[r];
+                else dataRows.push(rows[r]);
+            }
+            return {headers: headers, rows: dataRows};
+        }
+
+        // ---- Preview and apply ----
+        var _importHeaders = [];
+        var _importRows = [];
+
+        function showImportPreview(headers, rows) {
+            _importHeaders = headers;
+            _importRows = rows;
+
+            var preview = document.getElementById('importPreview');
+            var title = document.getElementById('importTitle');
+            var textarea = document.getElementById('importTextarea');
+            var fillBtn = document.getElementById('importFillBtn');
+
+            preview.style.display = 'block';
+            textarea.style.display = 'none';
+            fillBtn.textContent = '确认填充';
+            fillBtn.onclick = applyImportData;
+            title.innerHTML = '<svg style="width:18px;height:18px;color:#6366f1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>导入数据预览 (' + rows.length + '行数据)';
+
+            // Build preview HTML
+            var html = '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+            if(headers.length > 0) {
+                html += '<thead><tr>';
+                for(var h = 0; h < headers.length; h++) {
+                    html += '<th style="padding:4px 6px;text-align:left;color:#6366f1;white-space:nowrap;border-bottom:1px solid #e2e8f0">' + (headers[h] || '') + '</th>';
+                }
+                html += '</tr></thead>';
+            }
+            html += '<tbody>';
+            var showRows = Math.min(rows.length, 20);
+            for(var r = 0; r < showRows; r++) {
+                html += '<tr>';
+                for(var c = 0; c < rows[r].length; c++) {
+                    var val = rows[r][c] || '';
+                    var isNum = parseCellNum(val) >= 0;
+                    html += '<td style="padding:3px 6px;white-space:nowrap;' + (isNum ? 'text-align:right;color:#059669;font-weight:600' : '') + '">' + val + '</td>';
+                }
+                html += '</tr>';
+            }
+            if(rows.length > 20) html += '<tr><td colspan="' + headers.length + '" style="padding:6px;text-align:center;color:#8B8581">... 共' + rows.length + '行，仅显示前20行</td></tr>';
+            html += '</tbody></table>';
+            preview.innerHTML = html;
+
+            document.getElementById('importModal').classList.add('show');
+        }
+
+        function applyImportData() {
+            if(_importRows.length === 0) { showToast('无数据可填充', true); return; }
+            // Use the existing parser logic with headers+rows
+            var headers = _importHeaders;
+            var dataRows = _importRows;
+
+            var fieldMap = {
+                annualActual:  ['年度累计完成','年度完成','年累计完成','累计完成额','年累计','全年累计','年度累计','累计完成'],
+                monthActual:   ['本月累计完成','本月完成','当月完成','月累计完成','本月累计','月度累计完成'],
+                collectActual: ['已回款额','回款额','回款金额','本月回款','月度已回款','当月回款','实际回款','累计回款'],
+                collectTarget: ['回款指标','月度回款指标','月度指标','回款目标','当月指标'],
+                dilienhuaActual: ['迪莲花','体检产出','莲花产出','迪莲花产出','体检','莲花'],
+                dilienhuaCount: ['客户数','涉及客户','家数','客户数量'],
+                collectRate:   ['回款完成率','完成率','回款率','达成率']
+            };
+
+            var curMonth = (new Date().getMonth() + 1) + '月';
+            var bestRowIdx = dataRows.length - 1;
+            for(var r = 0; r < dataRows.length; r++) {
+                if(dataRows[r][0] && dataRows[r][0].indexOf(curMonth) !== -1) { bestRowIdx = r; break; }
+            }
+
+            var filled = {};
+            for(var fieldId in fieldMap) {
+                if(!fieldMap.hasOwnProperty(fieldId)) continue;
+                var keywords = fieldMap[fieldId];
+                var colIdx = -1;
+                for(var h = 0; h < headers.length; h++) {
+                    for(var k = 0; k < keywords.length; k++) {
+                        if(headers[h].indexOf(keywords[k]) !== -1) { colIdx = h; break; }
+                    }
+                    if(colIdx >= 0) break;
+                }
+                if(colIdx >= 0 && bestRowIdx < dataRows.length) {
+                    var val = parseCellNum(dataRows[bestRowIdx][colIdx]);
+                    if(!isNaN(val) && val >= 0) {
+                        var el = document.getElementById(fieldId);
+                        if(el) {
+                            el.value = (fieldId === 'dilienhuaCount') ? String(Math.round(val)) : val.toFixed(2);
+                            filled[fieldId] = el.value;
+                        }
+                    }
+                }
+            }
+
+            var filledCount = Object.keys(filled).length;
+            if(filledCount > 0) {
+                if(filled['collectRate']) calcCollectFromRate();
+                updateComputedFields();
+                saveLocalCache();
+                showToast('已识别并填充 ' + filledCount + ' 个字段');
+                closeImportModal();
+            } else {
+                showToast('未识别到可填充的字段，请尝试手动粘贴数据', true);
+            }
+        }
+
+        function openImportModal() {
+            // Reset to paste mode
+            var preview = document.getElementById('importPreview');
+            var textarea = document.getElementById('importTextarea');
+            var fillBtn = document.getElementById('importFillBtn');
+            var title = document.getElementById('importTitle');
+            preview.style.display = 'none';
+            textarea.style.display = '';
+            textarea.value = '';
+            fillBtn.textContent = '识别并填充';
+            fillBtn.onclick = parseImportData;
+            title.innerHTML = '<svg style="width:18px;height:18px;color:#6366f1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>从Excel粘贴数据';
+            document.getElementById('importModal').classList.add('show');
+            setTimeout(function() { textarea.focus(); }, 300);
+        }
+
+        function copyToClipboard(text) {
+            if(navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(function(){
+                    showToast('复制成功，请前往微信粘贴');
+                }).catch(function(){ fallbackCopy(text); });
+            } else { fallbackCopy(text); }
+        }
+
+        function fallbackCopy(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;top:0;left:0';
+            document.body.appendChild(ta);
+            ta.focus(); ta.select();
+            try {
+                document.execCommand('copy');
+                showToast('降级复制成功，请前往微信粘贴');
+            } catch(e) {
+                showToast('复制失败，请重试', true);
+            }
+            document.body.removeChild(ta);
+        }
+    </script>
+</body>
+</html>
